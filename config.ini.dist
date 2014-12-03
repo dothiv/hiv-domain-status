@@ -1,0 +1,5 @@
+[database]
+host = localhost
+name =  hivdomainstatus
+user = hivdomainstatus
+; password = null

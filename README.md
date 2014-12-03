@@ -21,3 +21,13 @@ the webpage and analysing the response.
  - does the returned website (after following redirects) contain the 
    click-counter snippet
  - does the redirect target (if an iframe is used) work?
+
+## Testing
+
+Create a databse to run the tests on:
+
+    CREATE USER hivdomainstatus;
+	CREATE DATABASE hivdomainstatus;
+	GRANT ALL PRIVILEGES ON DATABASE hivdomainstatus TO hivdomainstatus;
+	
+	psql -H localhost -U hivdomainstatus -d hivdomainstatus < sql/domain.sql

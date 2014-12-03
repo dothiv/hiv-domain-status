@@ -1,0 +1,4 @@
+[database]
+host = localhost
+name =  travis_ci_test
+user = postgres
