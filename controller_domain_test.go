@@ -108,7 +108,7 @@ func TestThatItAddsNewDomain(t *testing.T) {
     }))
     defer ts.Close()
 
-	var data = []byte(`{"name":"example.hiv"}`)
+	var data = []byte(`{"name":"test.hiv"}`)
 	res, err := http.Post(ts.URL + "/domain", "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +126,7 @@ func TestThatItFetchesNewDomain(t *testing.T) {
     defer ts.Close()
 
     d := new(Domain)
-    d.Name = "example.hiv"
+    d.Name = "test.hiv"
     cntrl.repo.Persist(d)
 
 	// Fetch the new domain
@@ -148,7 +148,7 @@ func TestThatItFetchesNewDomain(t *testing.T) {
 	if unmarshalErr != nil {
 		t.Fatal(unmarshalErr)
 	}
-	assert.Equal("example.hiv", m.Name)
+	assert.Equal("test.hiv", m.Name)
 	assert.Equal(fmt.Sprintf("%s/domain/%d", ts.URL, d.Id), m.JsonLDId)
 	assert.Equal("http://jsonld.click4life.hiv/Domain", m.JsonLDContext)
 }
@@ -163,7 +163,7 @@ func TestThatItDeletesDomain(t *testing.T) {
     defer ts.Close()
 
     d := new(Domain)
-    d.Name = "example.hiv"
+    d.Name = "test.hiv"
     cntrl.repo.Persist(d)
 
 	// Delete
