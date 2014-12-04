@@ -5,7 +5,32 @@ import (
 	"fmt"
 	"net/http"
 	"log"
+	"regexp"
 )
+
+type route struct {
+        re *regexp.Regexp
+        handler func(http.ResponseWriter, *http.Request, []string)
+}
+
+type RegexpHandler struct {
+        routes []*route
+}
+
+func (h *RegexpHandler) AddRoute(re string, handler func(http.ResponseWriter, *http.Request, []string)) {
+        r := &route{regexp.MustCompile(re), handler}
+        h.routes = append(h.routes, r)
+}
+
+func (h *RegexpHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+        for _, route := range h.routes {
+                matches := route.re.FindStringSubmatch(r.URL.String())
+                if matches != nil {
+                        route.handler(rw, r, matches)
+                        break
+                }
+        }
+}
 
 func Serve(c *Config) (err error) {
 	// Open DB
@@ -18,12 +43,13 @@ func Serve(c *Config) (err error) {
 
 	domainCntrl := new(DomainController)
 	domainCntrl.repo = NewDomainRepository(db)
-	http.HandleFunc("/domain", domainCntrl.ListingHandler)
-
 	entryPointCntrl := new(EntryPointController)
-	http.HandleFunc("/", entryPointCntrl.EntryPointHandler)
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost:%d", c.Server.Port), nil))
+	reHandler := new(RegexpHandler)
+	reHandler.AddRoute("^/domain/([0-9]+)$", domainCntrl.ItemHandler)
+	reHandler.AddRoute("^/domain$", domainCntrl.ListingHandler)
+	reHandler.AddRoute("^/$", entryPointCntrl.EntryPointHandler)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost:%d", c.Server.Port), reHandler))
 	
 	return
 }

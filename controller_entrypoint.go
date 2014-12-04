@@ -13,7 +13,7 @@ type EntryPoint struct {
 type EntryPointController struct {
 }
 
-func (c *EntryPointController) EntryPointHandler(w http.ResponseWriter, r *http.Request) {
+func (c *EntryPointController) EntryPointHandler(w http.ResponseWriter, r *http.Request, routeParams []string) {
 	if r.Method != "GET" {
 		w.WriteHeader(400)
 		return

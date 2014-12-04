@@ -5,6 +5,6 @@ type Entity interface {
 
 type Domain struct {
 	Entity
-	Id           int
+	Id           int64
 	Name         string
 }

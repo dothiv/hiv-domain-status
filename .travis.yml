@@ -9,6 +9,11 @@ go:
   - tip
 
 install:
+  - go get github.com/stretchr/testify/assert
+  - go get github.com/wsxiaoys/terminal/color
+  - go get github.com/lib/pq
+  - go get code.google.com/p/gcfg
+  - go get github.com/gorilla/mux
 
 before_script:
   - cp config.ini.travis config.ini

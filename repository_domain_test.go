@@ -24,7 +24,7 @@ func TestThatItPersists(t *testing.T) {
 	domain := new(Domain)
 	domain.Name = "example.hiv"
 	repo := NewDomainRepository(db)
-	_, persistErr := repo.Persist(domain)
+	persistErr := repo.Persist(domain)
 	assert.Nil(persistErr)
 	
 	// Verify

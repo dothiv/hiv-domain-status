@@ -7,10 +7,12 @@ import (
 )
 
 type DomainRepositoryInterface interface {
-	Persist(m *Domain) (result sql.Result, err error)
+	Persist(m *Domain) (err error)
+	Remove(m *Domain) (err error)
 	FindAll() (result []*Domain, err error)
 	FindPaginated(numitems int, offsetKey string) (result []*Domain, err error)
 	Stats() (count int, maxKey string, err error)
+	FindById(id int64) (d *Domain, err error)
 }
 
 type DomainRepository struct {
@@ -30,11 +32,19 @@ func NewDomainRepository(db *sql.DB) (repo *DomainRepository) {
 	return
 }
 
-func (repo *DomainRepository) Persist(m *Domain) (result sql.Result, err error) {
-	result, err = repo.db.Exec("INSERT INTO "+repo.TABLE_NAME+" "+
+func (repo *DomainRepository) Persist(m *Domain) (err error) {
+	err = repo.db.QueryRow("INSERT INTO "+repo.TABLE_NAME+" "+
 		"("+repo.FIELDS+") "+
-		"VALUES($1)",
-		m.Name)
+		"VALUES($1) RETURNING id",
+		m.Name).Scan(&m.Id)
+	return
+}
+
+func (repo *DomainRepository) Remove(m *Domain) (err error) {
+	_, err = repo.db.Exec("DELETE FROM "+repo.TABLE_NAME+" "+
+		"WHERE " + repo.OFFSET_FIELD + " = $1",
+		m.Id)
+	print(fmt.Sprintf("<%d>", m.Id))
 	return
 }
 
@@ -85,5 +95,11 @@ func (repo *DomainRepository) Stats() (count int, maxKey string, err error) {
 		// If table is empty MAX(id) is null
 		maxKey = fmt.Sprintf("%d", maxKeyInt.Int64)
 	}
+	return
+}
+
+func (repo *DomainRepository) FindById(id int64) (d *Domain, err error) {
+	d = new(Domain)
+	err = repo.db.QueryRow("SELECT " + repo.OFFSET_FIELD + "," + repo.FIELDS + " FROM " + repo.TABLE_NAME + " WHERE " + repo.OFFSET_FIELD + " = $1", id).Scan(&d.Id, &d.Name)
 	return
 }
