@@ -7,4 +7,5 @@ type Domain struct {
 	Entity
 	Id           int64
 	Name         string
+	Valid        bool
 }

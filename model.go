@@ -10,4 +10,5 @@ type DomainModel struct {
 	JsonLDTypedModel
 	Id string
 	Name         string
+	Valid bool
 }

@@ -13,6 +13,7 @@ type DomainRepositoryInterface interface {
 	FindPaginated(numitems int, offsetKey string) (result []*Domain, err error)
 	Stats() (count int, maxKey string, err error)
 	FindById(id int64) (d *Domain, err error)
+	FindByName(name string) (d *Domain, err error)
 }
 
 type DomainRepository struct {
@@ -27,16 +28,21 @@ func NewDomainRepository(db *sql.DB) (repo *DomainRepository) {
 	repo = new(DomainRepository)
 	repo.db = db
 	repo.TABLE_NAME = "domain"
-	repo.FIELDS = "name"
+	repo.FIELDS = "name, valid"
 	repo.OFFSET_FIELD = "id"
 	return
 }
 
 func (repo *DomainRepository) Persist(m *Domain) (err error) {
-	err = repo.db.QueryRow("INSERT INTO "+repo.TABLE_NAME+" "+
-		"("+repo.FIELDS+") "+
-		"VALUES($1) RETURNING id",
-		m.Name).Scan(&m.Id)
+	if m.Id > 0 {
+		_, err = repo.db.Exec("UPDATE "+repo.TABLE_NAME+" "+
+			"SET valid = $1 WHERE id = $2",m.Valid, m.Id)
+	} else {
+		err = repo.db.QueryRow("INSERT INTO "+repo.TABLE_NAME+" "+
+			"("+repo.FIELDS+") "+
+			"VALUES($1, $2) RETURNING id",
+			m.Name, m.Valid).Scan(&m.Id)		
+	}
 	return
 }
 
@@ -52,8 +58,7 @@ func (repo *DomainRepository) rowsToResult(rows *sql.Rows) (result []*Domain, er
 	result = make([]*Domain, 0)
 	for rows.Next() {
 		var m = new(Domain)
-		err = rows.Scan(&m.Id,
-			&m.Name)
+		err = rows.Scan(&m.Id, &m.Name, &m.Valid)
 		if err != nil {
 			return
 		}
@@ -100,6 +105,12 @@ func (repo *DomainRepository) Stats() (count int, maxKey string, err error) {
 
 func (repo *DomainRepository) FindById(id int64) (d *Domain, err error) {
 	d = new(Domain)
-	err = repo.db.QueryRow("SELECT " + repo.OFFSET_FIELD + "," + repo.FIELDS + " FROM " + repo.TABLE_NAME + " WHERE " + repo.OFFSET_FIELD + " = $1", id).Scan(&d.Id, &d.Name)
+	err = repo.db.QueryRow("SELECT " + repo.OFFSET_FIELD + "," + repo.FIELDS + " FROM " + repo.TABLE_NAME + " WHERE " + repo.OFFSET_FIELD + " = $1", id).Scan(&d.Id, &d.Name, &d.Valid)
+	return
+}
+
+func (repo *DomainRepository) FindByName(name string) (d *Domain, err error) {
+	d = new(Domain)
+	err = repo.db.QueryRow("SELECT " + repo.OFFSET_FIELD + "," + repo.FIELDS + " FROM " + repo.TABLE_NAME + " WHERE name = $1", name).Scan(&d.Id, &d.Name, &d.Valid)
 	return
 }
