@@ -1,10 +1,13 @@
 package hivdomainstatus
 
-type Model interface {
+type DomainListModel struct {
+	JsonLDTypedModel
+	Items []*DomainModel `json:"items"`
+	Total int                  `json:"total"`
 }
 
-type Domain struct {
-	Model
-	Id           int
+type DomainModel struct {
+	JsonLDTypedModel
+	Id string
 	Name         string
 }

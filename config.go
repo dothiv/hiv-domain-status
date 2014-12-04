@@ -1,8 +1,14 @@
 package hivdomainstatus
 
-import "fmt"
+import (
+	"fmt"
+	"code.google.com/p/gcfg"
+)
 
 type Config struct {
+	Server struct {
+		Port int
+	}
 	Database   struct {
 		Host     string
 		Name     string
@@ -26,5 +32,11 @@ func (c *Config) DSN() (dsn string) {
 func NewDefaultConfig() (c *Config) {
 	c = new(Config)
 	c.Database.Sslmode = "disable"
+	return
+}
+
+func NewConfig() (c *Config, err error) {
+	c = NewDefaultConfig()
+	err = gcfg.ReadFileInto(c, "config.ini")
 	return
 }

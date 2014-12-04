@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS domain;
 
 CREATE TABLE domain (
-	id serial primary key not null,
+	id SERIAL PRIMARY KEY NOT NULL UNIQUE,
 	name varchar(128),
 	created timestamp DEFAULT current_timestamp
 );

@@ -18,6 +18,7 @@ func TestThatItPersists(t *testing.T) {
 		t.Fatal(configErr)
 	}
 	db, _ := sql.Open("postgres", c.DSN())
+	db.Exec("TRUNCATE domain RESTART IDENTITY")
 	
 	// Persist
 	domain := new(Domain)
@@ -26,10 +27,11 @@ func TestThatItPersists(t *testing.T) {
 	_, persistErr := repo.Persist(domain)
 	assert.Nil(persistErr)
 	
-	// Verify import
+	// Verify
 	domains, findErr := repo.FindAll()
 	assert.Nil(findErr)
 	assert.Equal(1, len(domains))
 
+	assert.Equal(1, domains[0].Id)
 	assert.Equal("example.hiv", domains[0].Name)
 }
