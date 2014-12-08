@@ -75,6 +75,10 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 			checkResult.Valid = false
 			return
 		}
+		if len(redirectUrl.Scheme) == 0 {
+			redirectUrl.Scheme = checkResult.URL.Scheme
+			checkResult.IframeTarget = redirectUrl.String()
+		}
 		redirectChecker := NewDomainCheckResult(redirectUrl.Host)
 		redirectChecker.URL = redirectUrl
 		redirectChecker.SaveBody = false
@@ -109,7 +113,8 @@ func (checkResult *DomainCheckResult) dnsCheck() (err error) {
 func (checkResult *DomainCheckResult) fetch() (err error) {
 	log.Printf("[%s] Fetching %s\n", checkResult.Domain, checkResult.URL)
 	var response *http.Response
-	response, err = http.Get(checkResult.URL.String())
+	url := checkResult.URL.String()
+	response, err = http.Get(url)
 	if err != nil {
 		return
 	}

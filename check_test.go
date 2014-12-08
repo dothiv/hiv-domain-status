@@ -34,7 +34,7 @@ func TestThatItChecksDomain(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<script src="` + CLICKCOUNTER_SCRIPT + `">`))
-		w.Write([]byte(`<iframe id="clickcounter-target-iframe" src="http://` + r.Host + `">`))
+		w.Write([]byte(`<iframe id="clickcounter-target-iframe" src="//` + r.Host + `">`))
 	}))
 	defer ts.Close()
 
