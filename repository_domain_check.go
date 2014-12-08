@@ -54,6 +54,10 @@ func (repo *DomainCheckRepository) Persist(result *DomainCheck) (err error) {
 			"VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, created",
 			result.Domain, result.DnsOK, result.AddressesJson, result.URL, result.StatusCode, result.ScriptPresent, result.IframeTarget, result.IframeTargetOk, result.Valid).Scan(&result.Id, &result.Created)
 	}
+	if err != nil {
+		log.Fatalln(err.Error())
+		return
+	}
 	return
 }
 

@@ -3,33 +3,33 @@ package hivdomainstatus
 import (
 	"database/sql"
 	"fmt"
-	"net/http"
 	"log"
+	"net/http"
 	"regexp"
 )
 
 type route struct {
-        re *regexp.Regexp
-        handler func(http.ResponseWriter, *http.Request, []string)
+	re      *regexp.Regexp
+	handler func(http.ResponseWriter, *http.Request, []string)
 }
 
 type RegexpHandler struct {
-        routes []*route
+	routes []*route
 }
 
 func (h *RegexpHandler) AddRoute(re string, handler func(http.ResponseWriter, *http.Request, []string)) {
-        r := &route{regexp.MustCompile(re), handler}
-        h.routes = append(h.routes, r)
+	r := &route{regexp.MustCompile(re), handler}
+	h.routes = append(h.routes, r)
 }
 
 func (h *RegexpHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-        for _, route := range h.routes {
-                matches := route.re.FindStringSubmatch(r.URL.String())
-                if matches != nil {
-                        route.handler(rw, r, matches)
-                        break
-                }
-        }
+	for _, route := range h.routes {
+		matches := route.re.FindStringSubmatch(r.URL.String())
+		if matches != nil {
+			route.handler(rw, r, matches)
+			break
+		}
+	}
 }
 
 func Serve(c *Config) (err error) {
@@ -42,14 +42,16 @@ func Serve(c *Config) (err error) {
 	log.Println(fmt.Sprintf("Starting server on localhost:%d ...", c.Server.Port))
 
 	domainCntrl := new(DomainController)
-	domainCntrl.repo = NewDomainRepository(db)
+	domainCntrl.domainRepo = NewDomainRepository(db)
+	domainCntrl.domainCheckRepo = NewDomainCheckRepository(db)
 	entryPointCntrl := new(EntryPointController)
 
 	reHandler := new(RegexpHandler)
+	reHandler.AddRoute("^/domain/([0-9]+)/check$", domainCntrl.CheckHandler)
 	reHandler.AddRoute("^/domain/([0-9]+)$", domainCntrl.ItemHandler)
 	reHandler.AddRoute("^/domain$", domainCntrl.ListingHandler)
 	reHandler.AddRoute("^/$", entryPointCntrl.EntryPointHandler)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost:%d", c.Server.Port), reHandler))
-	
+
 	return
 }

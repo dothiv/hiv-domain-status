@@ -1,15 +1,16 @@
 package hivdomainstatus
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"testing"
-	"bytes"
+	"os"
 	"regexp"
-	"fmt"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +20,7 @@ import (
 type DomainList struct {
 	Total int
 	Items []struct {
-		Name         string
+		Name string
 	}
 }
 
@@ -31,14 +32,16 @@ func SetupDomainTest(t *testing.T) (cntrl *DomainController) {
 	db, _ := sql.Open("postgres", c.DSN())
 
 	cntrl = new(DomainController)
-	cntrl.repo = NewDomainRepository(db)
+	cntrl.domainRepo = NewDomainRepository(db)
+	cntrl.domainCheckRepo = NewDomainCheckRepository(db)
 	db.Exec("TRUNCATE domain RESTART IDENTITY")
+	db.Exec("TRUNCATE domain_check RESTART IDENTITY")
 
 	data := []string{"example.hiv", "acme.hiv"}
-	for _,name := range data {
+	for _, name := range data {
 		d := new(Domain)
 		d.Name = name
-		cntrl.repo.Persist(d)
+		cntrl.domainRepo.Persist(d)
 	}
 	return
 }
@@ -50,8 +53,8 @@ func TestThatItListsDomains(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cntrl.ListingHandler(w, r, nil)
-    }))
-    defer ts.Close()
+	}))
+	defer ts.Close()
 
 	res, err := http.Get(ts.URL)
 	if err != nil {
@@ -74,7 +77,68 @@ func TestThatItListsDomains(t *testing.T) {
 	assert.Equal("example.hiv", l.Items[0].Name)
 	assert.Equal("acme.hiv", l.Items[1].Name)
 
-	assert.Equal(`<` + ts.URL + `/domain?offsetKey=2>; rel="next"`, res.Header.Get("Link"))
+	assert.Equal(`<`+ts.URL+`/domain?offsetKey=2>; rel="next"`, res.Header.Get("Link"))
+}
+
+func TestThatItListsDomainCheck(t *testing.T) {
+	assert := assert.New(t)
+
+	cntrl := SetupDomainTest(t)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cntrl.CheckHandler(w, r, regexp.MustCompile("^/domain/([0-9]+)/check$").FindStringSubmatch(r.URL.String()))
+	}))
+	defer ts.Close()
+
+	d := new(Domain)
+	d.Name = "test.hiv"
+	assert.Nil(cntrl.domainRepo.Persist(d))
+
+	c := new(DomainCheck)
+	c.Domain = "test.hiv"
+	c.DnsOK = true
+	c.Addresses = []string{"127.0.0.1", "::1"}
+	c.URL = "http://example.hiv"
+	c.StatusCode = 200
+	c.ScriptPresent = true
+	c.IframeTarget = "http://example.com/"
+	c.IframeTargetOk = true
+	c.Valid = true
+	assert.Nil(cntrl.domainCheckRepo.Persist(c))
+
+	// Fetch the domain check
+	fetchRes, fetchErr := http.Get(fmt.Sprintf("%s/domain/%d/check", ts.URL, d.Id))
+	if fetchErr != nil {
+		t.Fatal(fetchErr)
+	}
+	assert.Equal(http.StatusOK, fetchRes.StatusCode)
+
+	b, readErr := ioutil.ReadAll(fetchRes.Body)
+	fetchRes.Body.Close()
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	os.Stdout.Write(b)
+	assert.Equal("application/json", fetchRes.Header.Get("Content-Type"))
+
+	var m DomainCheckModel
+	unmarshalErr := json.Unmarshal(b, &m)
+	if unmarshalErr != nil {
+		t.Fatal(unmarshalErr)
+	}
+	assert.Equal("test.hiv", m.Domain)
+	assert.Equal(fmt.Sprintf("%s/domain/%d/check", ts.URL, d.Id), m.JsonLDId)
+	assert.Equal("http://jsonld.click4life.hiv/DomainCheck", m.JsonLDContext)
+	assert.True(m.DnsOK)
+	assert.Equal("127.0.0.1", m.Addresses[0])
+	assert.Equal("::1", m.Addresses[1])
+	assert.Equal("http://example.hiv", m.URL)
+	assert.Equal(200, m.StatusCode)
+	assert.True(m.ScriptPresent)
+	assert.Equal("http://example.com/", m.IframeTarget)
+	assert.True(m.IframeTargetOk)
+	assert.True(m.Valid)
+
 }
 
 func TestThatItReturnsNextUrlAfterEndOfDomains(t *testing.T) {
@@ -83,8 +147,8 @@ func TestThatItReturnsNextUrlAfterEndOfDomains(t *testing.T) {
 	cntrl := SetupDomainTest(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cntrl.ListingHandler(w, r, nil)
-    }))
-    defer ts.Close()
+	}))
+	defer ts.Close()
 
 	res, err := http.Get(ts.URL + "/domain?offsetKey=2")
 	if err != nil {
@@ -96,7 +160,7 @@ func TestThatItReturnsNextUrlAfterEndOfDomains(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(`<` + ts.URL + `/domain?offsetKey=2>; rel="next"`, res.Header.Get("Link"))
+	assert.Equal(`<`+ts.URL+`/domain?offsetKey=2>; rel="next"`, res.Header.Get("Link"))
 }
 
 func TestThatItAddsNewDomain(t *testing.T) {
@@ -104,12 +168,12 @@ func TestThatItAddsNewDomain(t *testing.T) {
 
 	cntrl := SetupDomainTest(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cntrl.ListingHandler(w, r, nil)	
-    }))
-    defer ts.Close()
+		cntrl.ListingHandler(w, r, nil)
+	}))
+	defer ts.Close()
 
 	var data = []byte(`{"name":"test.hiv"}`)
-	res, err := http.Post(ts.URL + "/domain", "application/json", bytes.NewBuffer(data))
+	res, err := http.Post(ts.URL+"/domain", "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,13 +185,13 @@ func TestThatItFetchesNewDomain(t *testing.T) {
 
 	cntrl := SetupDomainTest(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cntrl.ItemHandler(w, r, regexp.MustCompile("^/domain/([0-9]+)$").FindStringSubmatch(r.URL.String()))	
-    }))
-    defer ts.Close()
+		cntrl.ItemHandler(w, r, regexp.MustCompile("^/domain/([0-9]+)$").FindStringSubmatch(r.URL.String()))
+	}))
+	defer ts.Close()
 
-    d := new(Domain)
-    d.Name = "test.hiv"
-    cntrl.repo.Persist(d)
+	d := new(Domain)
+	d.Name = "test.hiv"
+	cntrl.domainRepo.Persist(d)
 
 	// Fetch the new domain
 	fetchRes, fetchErr := http.Get(fmt.Sprintf("%s/domain/%d", ts.URL, d.Id))
@@ -158,13 +222,13 @@ func TestThatItDeletesDomain(t *testing.T) {
 
 	cntrl := SetupDomainTest(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cntrl.ItemHandler(w, r, regexp.MustCompile("^/domain/([0-9]+)$").FindStringSubmatch(r.URL.String()))	
-    }))
-    defer ts.Close()
+		cntrl.ItemHandler(w, r, regexp.MustCompile("^/domain/([0-9]+)$").FindStringSubmatch(r.URL.String()))
+	}))
+	defer ts.Close()
 
-    d := new(Domain)
-    d.Name = "test.hiv"
-    cntrl.repo.Persist(d)
+	d := new(Domain)
+	d.Name = "test.hiv"
+	cntrl.domainRepo.Persist(d)
 
 	// Delete
 	deleteReq, deleteReqErr := http.NewRequest("DELETE", fmt.Sprintf("%s/domain/%d", ts.URL, d.Id), nil)
@@ -177,6 +241,6 @@ func TestThatItDeletesDomain(t *testing.T) {
 		t.Fatal(deleteErr)
 	}
 	assert.Equal(http.StatusNoContent, deleteRes.StatusCode)
-	all, _ := cntrl.repo.FindAll()
+	all, _ := cntrl.domainRepo.FindAll()
 	assert.Equal(2, len(all))
 }
