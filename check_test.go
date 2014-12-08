@@ -2,10 +2,10 @@ package hivdomainstatus
 
 import (
 	"database/sql"
-	"testing"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +20,7 @@ func SetupCheckTest(t *testing.T) (c *Config) {
 	repo := NewDomainRepository(db)
 
 	data := []string{"click4life.hiv"}
-	for _,name := range data {
+	for _, name := range data {
 		d := new(Domain)
 		d.Name = name
 		repo.Persist(d)
@@ -38,9 +38,14 @@ func TestThatItChecksDomain(t *testing.T) {
 	}))
 	defer ts.Close()
 
+	lookupHost = func(domain string) (addresses []string, err error) {
+		assert.Equal("example.hiv", domain)
+		return []string{"1.2.3.4"}, nil
+	}
+
 	testChecker := NewDomainCheckResult("example.hiv")
 	testUrl, _ := url.Parse(ts.URL)
-	testChecker.url = testUrl
+	testChecker.URL = testUrl
 	testChecker.SaveBody = false
 	err := testChecker.Check()
 	assert.Nil(err)
@@ -49,4 +54,6 @@ func TestThatItChecksDomain(t *testing.T) {
 	assert.True(testChecker.IframePresent)
 	assert.Equal(testChecker.IframeTarget, ts.URL)
 	assert.True(testChecker.IframeTargetOk)
+	assert.True(testChecker.DnsOk)
+	assert.Equal("1.2.3.4", testChecker.Addresses[0])
 }

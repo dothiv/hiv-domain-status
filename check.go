@@ -1,12 +1,13 @@
 package hivdomainstatus
 
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"io/ioutil"
-	"fmt"
-	"log"
 	"regexp"
 	"strings"
 )
@@ -14,34 +15,42 @@ import (
 var CLICKCOUNTER_SCRIPT = "//dothiv-registry.appspot.com/static/clickcounter.min.js"
 
 type DomainCheckResult struct {
-	Domain string
-	url *url.URL
-	bodyFile string
-	body []byte
-	StatusCode int
-	ScriptPresent bool
-	SaveBody bool
-	IframePresent bool
-	IframeTarget string
+	Domain         string
+	DnsOk          bool
+	Addresses      []string
+	URL            *url.URL
+	bodyFile       string
+	body           []byte
+	StatusCode     int
+	ScriptPresent  bool
+	SaveBody       bool
+	IframePresent  bool
+	IframeTarget   string
 	IframeTargetOk bool
-	Valid bool
+	Valid          bool
 }
 
 func NewDomainCheckResult(domain string) (checkResult *DomainCheckResult) {
 	checkResult = new(DomainCheckResult)
 	checkResult.Domain = domain
 	checkResult.SaveBody = true
-	checkResult.url, _ = url.Parse("http://www." + checkResult.Domain + "/")
+	checkResult.URL, _ = url.Parse("http://www." + checkResult.Domain + "/")
 	return
 }
 
 func (checkResult *DomainCheckResult) IsHivDomain() bool {
-	return strings.ToLower(checkResult.Domain[len(checkResult.Domain) - 3:]) == "hiv"
+	return strings.ToLower(checkResult.Domain[len(checkResult.Domain)-3:]) == "hiv"
 }
-
 
 func (checkResult *DomainCheckResult) Check() (err error) {
 	checkResult.Valid = true
+	if checkResult.IsHivDomain() {
+		err = checkResult.dnsCheck()
+		if err != nil {
+			checkResult.Valid = false
+			return
+		}
+	}
 	err = checkResult.fetch()
 	if err != nil {
 		checkResult.Valid = false
@@ -67,7 +76,7 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 			return
 		}
 		redirectChecker := NewDomainCheckResult(redirectUrl.Host)
-		redirectChecker.url = redirectUrl
+		redirectChecker.URL = redirectUrl
 		redirectChecker.SaveBody = false
 		redirectCheckErr := redirectChecker.Check()
 		if redirectCheckErr != nil {
@@ -81,19 +90,33 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 	return
 }
 
+var lookupHost = func(domain string) (addresses []string, err error) {
+	return net.LookupHost(domain)
+}
+
+// checks the DNS
+func (checkResult *DomainCheckResult) dnsCheck() (err error) {
+	checkResult.Addresses, err = lookupHost(checkResult.Domain)
+	if err != nil {
+		return
+	}
+	checkResult.DnsOk = true
+	return
+}
+
 // fetches an URL and saves it as a temp file
 // then opens it
 func (checkResult *DomainCheckResult) fetch() (err error) {
-	log.Printf("[%s] Fetching %s\n", checkResult.Domain, checkResult.url)
+	log.Printf("[%s] Fetching %s\n", checkResult.Domain, checkResult.URL)
 	var response *http.Response
-	response, err = http.Get(checkResult.url.String())
+	response, err = http.Get(checkResult.URL.String())
 	if err != nil {
 		return
 	}
 	var newUrl = response.Request.URL
-	if newUrl.String() != checkResult.url.String() {
+	if newUrl.String() != checkResult.URL.String() {
 		log.Printf("[%s] Redirect to: %s\n", checkResult.Domain, newUrl)
-		checkResult.url = newUrl
+		checkResult.URL = newUrl
 	}
 	checkResult.body, err = ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
@@ -102,14 +125,14 @@ func (checkResult *DomainCheckResult) fetch() (err error) {
 	}
 
 	if checkResult.SaveBody {
-		tmpFile, tmpFileErr := ioutil.TempFile(os.TempDir(), checkResult.Domain + "-check")
+		tmpFile, tmpFileErr := ioutil.TempFile(os.TempDir(), checkResult.Domain+"-check")
 		if tmpFileErr == nil {
 			defer tmpFile.Close()
 			tmpFile.Write(checkResult.body)
-			checkResult.bodyFile = tmpFile.Name()	
+			checkResult.bodyFile = tmpFile.Name()
 			log.Printf("[%s] Saved body to %s\n", checkResult.Domain, checkResult.bodyFile)
 		} else {
-			log.Printf("ERROR: Failed to save body to temp file.");
+			log.Printf("ERROR: Failed to save body to temp file.")
 		}
 	}
 
@@ -117,7 +140,7 @@ func (checkResult *DomainCheckResult) fetch() (err error) {
 	log.Printf("[%s] Status %d\n", checkResult.Domain, checkResult.StatusCode)
 
 	if checkResult.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Failed to load '%s': %s", checkResult.url, checkResult.body)
+		err = fmt.Errorf("Failed to load '%s': %s", checkResult.URL, checkResult.body)
 		return
 	}
 	return
@@ -135,14 +158,14 @@ func (checkResult *DomainCheckResult) checkClickCounter() (err error) {
 		srcAttribute := srcAttributeMatch.FindSubmatch(scriptTag[0])
 		if srcAttribute != nil {
 			if string(srcAttribute[2]) == CLICKCOUNTER_SCRIPT || string(srcAttribute[3]) == CLICKCOUNTER_SCRIPT || string(srcAttribute[4]) == CLICKCOUNTER_SCRIPT {
-				checkResult.ScriptPresent = true;
+				checkResult.ScriptPresent = true
 			}
 		}
 	}
 	if checkResult.ScriptPresent {
 		log.Printf("[%s] click-counter script installed\n", checkResult.Domain)
 	} else {
-		err = fmt.Errorf("click-counter script not installed", checkResult.url)
+		err = fmt.Errorf("click-counter script not installed")
 		return
 	}
 	return
@@ -156,11 +179,11 @@ func (checkResult *DomainCheckResult) checkIframe() (err error) {
 		if idAttribute != nil {
 			srcAttribute := srcAttributeMatch.FindSubmatch(iframeTag[0])
 			checkResult.IframePresent = true
-			keys := []int{2,3,4}
+			keys := []int{2, 3, 4}
 			for i := range keys {
 				if len(srcAttribute[keys[i]]) > 0 {
 					checkResult.IframeTarget = string(srcAttribute[keys[i]])
-				}	
+				}
 			}
 		}
 	}
@@ -169,7 +192,7 @@ func (checkResult *DomainCheckResult) checkIframe() (err error) {
 		if len(checkResult.IframeTarget) > 0 {
 			log.Printf("[%s] iframe src: %s\n", checkResult.Domain, checkResult.IframeTarget)
 		} else {
-			err = fmt.Errorf("iframe has no src", checkResult.url)
+			err = fmt.Errorf("iframe has no src")
 			return
 		}
 	}
@@ -179,14 +202,10 @@ func (checkResult *DomainCheckResult) checkIframe() (err error) {
 func CheckDomain(config *Config, domain string) (checkResult *DomainCheckResult, err error) {
 	checkResult = NewDomainCheckResult(domain)
 	err = checkResult.Check()
-	if err != nil {
-		log.Printf("[%s] PROBLEM: %s\n", checkResult.Domain, err.Error())	
+	if !checkResult.Valid {
+		log.Printf("[%s] PROBLEM: %s\n", checkResult.Domain, err.Error())
 	} else {
-		log.Printf("[%s] A-OK\n", checkResult.Domain)	
+		log.Printf("[%s] A-OK\n", checkResult.Domain)
 	}
 	return
-}
-
-func CheckAllDomains(config *Config) (err error) {
-	return	
 }

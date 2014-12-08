@@ -3,6 +3,8 @@ DROP TABLE IF EXISTS domain_check;
 CREATE TABLE domain_check (
 	id SERIAL PRIMARY KEY NOT NULL UNIQUE,
 	domain varchar(128) NOT NULL,
+	dns_ok boolean NOT NULL DEFAULT false,
+	addresses json,
 	url text NOT NULL,
 	status_code integer NOT NULL,
 	script_present boolean NOT NULL DEFAULT false,
