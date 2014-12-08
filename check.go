@@ -1,33 +1,33 @@
 package hivdomainstatus
 
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"io/ioutil"
-	"fmt"
-	"log"
 	"regexp"
 	"strings"
-	"net"
 )
 
 var CLICKCOUNTER_SCRIPT = "//dothiv-registry.appspot.com/static/clickcounter.min.js"
 
 type DomainCheckResult struct {
-	Domain string
-	DnsOk bool
-	Addresses []string
-	URL *url.URL
-	bodyFile string
-	body []byte
-	StatusCode int
-	ScriptPresent bool
-	SaveBody bool
-	IframePresent bool
-	IframeTarget string
+	Domain         string
+	DnsOk          bool
+	Addresses      []string
+	URL            *url.URL
+	bodyFile       string
+	body           []byte
+	StatusCode     int
+	ScriptPresent  bool
+	SaveBody       bool
+	IframePresent  bool
+	IframeTarget   string
 	IframeTargetOk bool
-	Valid bool
+	Valid          bool
 }
 
 func NewDomainCheckResult(domain string) (checkResult *DomainCheckResult) {
@@ -39,16 +39,17 @@ func NewDomainCheckResult(domain string) (checkResult *DomainCheckResult) {
 }
 
 func (checkResult *DomainCheckResult) IsHivDomain() bool {
-	return strings.ToLower(checkResult.Domain[len(checkResult.Domain) - 3:]) == "hiv"
+	return strings.ToLower(checkResult.Domain[len(checkResult.Domain)-3:]) == "hiv"
 }
-
 
 func (checkResult *DomainCheckResult) Check() (err error) {
 	checkResult.Valid = true
-	err = checkResult.dnsCheck()
-	if err != nil {
-		checkResult.Valid = false
-		return
+	if checkResult.IsHivDomain() {
+		err = checkResult.dnsCheck()
+		if err != nil {
+			checkResult.Valid = false
+			return
+		}
 	}
 	err = checkResult.fetch()
 	if err != nil {
@@ -89,9 +90,13 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 	return
 }
 
+var lookupHost = func(domain string) (addresses []string, err error) {
+	return net.LookupHost(domain)
+}
+
 // checks the DNS
 func (checkResult *DomainCheckResult) dnsCheck() (err error) {
-	checkResult.Addresses, err = net.LookupHost(checkResult.Domain)
+	checkResult.Addresses, err = lookupHost(checkResult.Domain)
 	if err != nil {
 		return
 	}
@@ -120,14 +125,14 @@ func (checkResult *DomainCheckResult) fetch() (err error) {
 	}
 
 	if checkResult.SaveBody {
-		tmpFile, tmpFileErr := ioutil.TempFile(os.TempDir(), checkResult.Domain + "-check")
+		tmpFile, tmpFileErr := ioutil.TempFile(os.TempDir(), checkResult.Domain+"-check")
 		if tmpFileErr == nil {
 			defer tmpFile.Close()
 			tmpFile.Write(checkResult.body)
-			checkResult.bodyFile = tmpFile.Name()	
+			checkResult.bodyFile = tmpFile.Name()
 			log.Printf("[%s] Saved body to %s\n", checkResult.Domain, checkResult.bodyFile)
 		} else {
-			log.Printf("ERROR: Failed to save body to temp file.");
+			log.Printf("ERROR: Failed to save body to temp file.")
 		}
 	}
 
@@ -153,7 +158,7 @@ func (checkResult *DomainCheckResult) checkClickCounter() (err error) {
 		srcAttribute := srcAttributeMatch.FindSubmatch(scriptTag[0])
 		if srcAttribute != nil {
 			if string(srcAttribute[2]) == CLICKCOUNTER_SCRIPT || string(srcAttribute[3]) == CLICKCOUNTER_SCRIPT || string(srcAttribute[4]) == CLICKCOUNTER_SCRIPT {
-				checkResult.ScriptPresent = true;
+				checkResult.ScriptPresent = true
 			}
 		}
 	}
@@ -174,11 +179,11 @@ func (checkResult *DomainCheckResult) checkIframe() (err error) {
 		if idAttribute != nil {
 			srcAttribute := srcAttributeMatch.FindSubmatch(iframeTag[0])
 			checkResult.IframePresent = true
-			keys := []int{2,3,4}
+			keys := []int{2, 3, 4}
 			for i := range keys {
 				if len(srcAttribute[keys[i]]) > 0 {
 					checkResult.IframeTarget = string(srcAttribute[keys[i]])
-				}	
+				}
 			}
 		}
 	}
@@ -198,9 +203,9 @@ func CheckDomain(config *Config, domain string) (checkResult *DomainCheckResult,
 	checkResult = NewDomainCheckResult(domain)
 	err = checkResult.Check()
 	if !checkResult.Valid {
-		log.Printf("[%s] PROBLEM: %s\n", checkResult.Domain, err.Error())	
+		log.Printf("[%s] PROBLEM: %s\n", checkResult.Domain, err.Error())
 	} else {
-		log.Printf("[%s] A-OK\n", checkResult.Domain)	
+		log.Printf("[%s] A-OK\n", checkResult.Domain)
 	}
 	return
 }

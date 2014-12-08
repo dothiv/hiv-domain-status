@@ -1,11 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"database/sql"
-	"github.com/wsxiaoys/terminal/color"
+	"fmt"
+	"log"
 	"os"
+
 	hivdomainstatus "github.com/dothiv/hiv-domain-status"
+	"github.com/wsxiaoys/terminal/color"
 )
 
 func error(msg string) {
@@ -39,7 +41,7 @@ func main() {
 			error(fmt.Sprintf("(%s) too many arguments", os.Args[0]))
 			os.Exit(1)
 		}
-		switch(os.Args[2]) {
+		switch os.Args[2] {
 		case "check":
 			color.Fprintln(os.Stdout, fmt.Sprintf("Usage: %s %s\n", os.Args[0], " check @{g}<hiv-domain>@{|}"))
 			os.Stdout.WriteString("Check hiv domains.\n")
@@ -70,6 +72,9 @@ func main() {
 			var result *hivdomainstatus.DomainCheckResult
 			result, err = hivdomainstatus.CheckDomain(c, os.Args[2])
 			manager.OnCheckDomainResult(result)
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
 		} else {
 			domains, findAllErr := domainRepo.FindAll()
 			if findAllErr != nil {

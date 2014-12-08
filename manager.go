@@ -2,10 +2,11 @@ package hivdomainstatus
 
 import (
 	"database/sql"
+	"log"
 )
 
 type Manager struct {
-	domainRepo DomainRepositoryInterface
+	domainRepo      DomainRepositoryInterface
 	domainCheckRepo DomainCheckRepositoryInterface
 }
 
@@ -30,6 +31,8 @@ func (m *Manager) OnCheckDomainResult(r *DomainCheckResult) (err error) {
 
 	result := new(DomainCheck)
 	result.Domain = r.Domain
+	result.DnsOK = r.DnsOk
+	result.Addresses = r.Addresses
 	result.URL = r.URL.String()
 	result.StatusCode = r.StatusCode
 	result.ScriptPresent = r.ScriptPresent
@@ -41,11 +44,16 @@ func (m *Manager) OnCheckDomainResult(r *DomainCheckResult) (err error) {
 		m.domainCheckRepo.Persist(result)
 		err = nil
 	} else if err != nil {
+		log.Fatalln(err.Error())
 		return
 	}
 
-	if (!lastResult.Equals(result)) {
-		m.domainCheckRepo.Persist(result)
+	if !lastResult.Equals(result) {
+		err = m.domainCheckRepo.Persist(result)
+		if err != nil {
+			log.Fatalln(err.Error())
+			return
+		}
 	}
 	return
 }

@@ -1,9 +1,10 @@
 package hivdomainstatus
 
 import (
-	"code.google.com/p/gcfg"
 	"database/sql"
 	"testing"
+
+	"code.google.com/p/gcfg"
 	assert "github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +20,7 @@ func TestThatItPersistsDomainCheck(t *testing.T) {
 	}
 	db, _ := sql.Open("postgres", c.DSN())
 	db.Exec("TRUNCATE domain_check RESTART IDENTITY")
-	
+
 	// Persist
 	result := new(DomainCheck)
 	result.DnsOK = true
@@ -34,7 +35,7 @@ func TestThatItPersistsDomainCheck(t *testing.T) {
 	repo := NewDomainCheckRepository(db)
 	persistErr := repo.Persist(result)
 	assert.Nil(persistErr)
-	
+
 	// Verify
 	results, findErr := repo.FindAll()
 	assert.Nil(findErr)
@@ -44,6 +45,9 @@ func TestThatItPersistsDomainCheck(t *testing.T) {
 
 	assert.Equal(1, r.Id)
 	assert.Equal("example.hiv", r.Domain)
+	assert.True(r.DnsOK)
+	assert.Equal("127.0.0.1", r.Addresses[0])
+	assert.Equal("::1", r.Addresses[1])
 	assert.Equal("http://example.hiv", r.URL)
 	assert.Equal(200, r.StatusCode)
 	assert.True(r.ScriptPresent)

@@ -2,6 +2,7 @@ package hivdomainstatus
 
 import (
 	"testing"
+
 	assert "github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,8 @@ func TestThatDomainCheckEquals(t *testing.T) {
 	c1.IframeTarget = "http://example.com/"
 	c1.IframeTargetOk = true
 	c1.Valid = true
+	c1.DnsOK = true
+	c1.Addresses = []string{"1.2.3.4"}
 
 	c2.Domain = "example.hiv"
 	c2.URL = "http://example.hiv"
@@ -30,6 +33,8 @@ func TestThatDomainCheckEquals(t *testing.T) {
 	c2.IframeTarget = "http://example.com/"
 	c2.IframeTargetOk = true
 	c2.Valid = true
+	c2.DnsOK = true
+	c2.Addresses = []string{"1.2.3.4"}
 
 	assert.True(c1.Equals(c2))
 	c2.Domain = "example2.hiv"
@@ -65,5 +70,15 @@ func TestThatDomainCheckEquals(t *testing.T) {
 	c2.Valid = false
 	assert.False(c1.Equals(c2))
 	c1.Valid = c2.Valid
+	assert.True(c1.Equals(c2))
+
+	c2.DnsOK = false
+	assert.False(c1.Equals(c2))
+	c1.DnsOK = c2.DnsOK
+	assert.True(c1.Equals(c2))
+
+	c2.Addresses = []string{"::1"}
+	assert.False(c1.Equals(c2))
+	c1.Addresses = c2.Addresses
 	assert.True(c1.Equals(c2))
 }
