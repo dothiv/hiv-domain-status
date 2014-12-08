@@ -22,6 +22,8 @@ func TestThatItPersistsDomainCheck(t *testing.T) {
 	
 	// Persist
 	result := new(DomainCheck)
+	result.DnsOK = true
+	result.Addresses = []string{"127.0.0.1", "::1"}
 	result.Domain = "example.hiv"
 	result.URL = "http://example.hiv"
 	result.StatusCode = 200

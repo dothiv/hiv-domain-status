@@ -4,15 +4,17 @@ import "time"
 
 type DomainCheck struct {
 	EntityInterface
-	Id           int64
-	Domain         string
-	URL         string
-	StatusCode int
-	ScriptPresent        bool
-	IframeTarget         string
-	IframeTargetOk        bool
-	Valid        bool
-	Created      *time.Time
+	Id           	int64
+	Domain         	string
+	DnsOK 			bool
+	Addresses		[]string
+	URL         	string
+	StatusCode 		int
+	ScriptPresent   bool
+	IframeTarget    string
+	IframeTargetOk  bool
+	Valid        	bool
+	Created      	*time.Time
 }
 
 func (self *DomainCheck) Equals(other *DomainCheck) bool {

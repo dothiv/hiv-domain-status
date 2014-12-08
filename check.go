@@ -9,12 +9,15 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"net"
 )
 
 var CLICKCOUNTER_SCRIPT = "//dothiv-registry.appspot.com/static/clickcounter.min.js"
 
 type DomainCheckResult struct {
 	Domain string
+	DnsOk bool
+	Addresses []string
 	URL *url.URL
 	bodyFile string
 	body []byte
@@ -42,6 +45,11 @@ func (checkResult *DomainCheckResult) IsHivDomain() bool {
 
 func (checkResult *DomainCheckResult) Check() (err error) {
 	checkResult.Valid = true
+	err = checkResult.dnsCheck()
+	if err != nil {
+		checkResult.Valid = false
+		return
+	}
 	err = checkResult.fetch()
 	if err != nil {
 		checkResult.Valid = false
@@ -78,6 +86,16 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 			checkResult.IframeTargetOk = true
 		}
 	}
+	return
+}
+
+// checks the DNS
+func (checkResult *DomainCheckResult) dnsCheck() (err error) {
+	checkResult.Addresses, err = net.LookupHost(checkResult.Domain)
+	if err != nil {
+		return
+	}
+	checkResult.DnsOk = true
 	return
 }
 
@@ -142,7 +160,7 @@ func (checkResult *DomainCheckResult) checkClickCounter() (err error) {
 	if checkResult.ScriptPresent {
 		log.Printf("[%s] click-counter script installed\n", checkResult.Domain)
 	} else {
-		err = fmt.Errorf("click-counter script not installed", checkResult.URL)
+		err = fmt.Errorf("click-counter script not installed")
 		return
 	}
 	return
@@ -169,7 +187,7 @@ func (checkResult *DomainCheckResult) checkIframe() (err error) {
 		if len(checkResult.IframeTarget) > 0 {
 			log.Printf("[%s] iframe src: %s\n", checkResult.Domain, checkResult.IframeTarget)
 		} else {
-			err = fmt.Errorf("iframe has no src", checkResult.URL)
+			err = fmt.Errorf("iframe has no src")
 			return
 		}
 	}
@@ -179,14 +197,10 @@ func (checkResult *DomainCheckResult) checkIframe() (err error) {
 func CheckDomain(config *Config, domain string) (checkResult *DomainCheckResult, err error) {
 	checkResult = NewDomainCheckResult(domain)
 	err = checkResult.Check()
-	if err != nil {
+	if !checkResult.Valid {
 		log.Printf("[%s] PROBLEM: %s\n", checkResult.Domain, err.Error())	
 	} else {
 		log.Printf("[%s] A-OK\n", checkResult.Domain)	
 	}
 	return
-}
-
-func CheckAllDomains(config *Config) (err error) {
-	return	
 }

@@ -38,7 +38,7 @@ func TestThatItChecksDomain(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	testChecker := NewDomainCheckResult("example.hiv")
+	testChecker := NewDomainCheckResult("localhost")
 	testUrl, _ := url.Parse(ts.URL)
 	testChecker.URL = testUrl
 	testChecker.SaveBody = false
