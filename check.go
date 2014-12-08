@@ -15,7 +15,7 @@ var CLICKCOUNTER_SCRIPT = "//dothiv-registry.appspot.com/static/clickcounter.min
 
 type DomainCheckResult struct {
 	Domain string
-	url *url.URL
+	URL *url.URL
 	bodyFile string
 	body []byte
 	StatusCode int
@@ -31,7 +31,7 @@ func NewDomainCheckResult(domain string) (checkResult *DomainCheckResult) {
 	checkResult = new(DomainCheckResult)
 	checkResult.Domain = domain
 	checkResult.SaveBody = true
-	checkResult.url, _ = url.Parse("http://www." + checkResult.Domain + "/")
+	checkResult.URL, _ = url.Parse("http://www." + checkResult.Domain + "/")
 	return
 }
 
@@ -67,7 +67,7 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 			return
 		}
 		redirectChecker := NewDomainCheckResult(redirectUrl.Host)
-		redirectChecker.url = redirectUrl
+		redirectChecker.URL = redirectUrl
 		redirectChecker.SaveBody = false
 		redirectCheckErr := redirectChecker.Check()
 		if redirectCheckErr != nil {
@@ -84,16 +84,16 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 // fetches an URL and saves it as a temp file
 // then opens it
 func (checkResult *DomainCheckResult) fetch() (err error) {
-	log.Printf("[%s] Fetching %s\n", checkResult.Domain, checkResult.url)
+	log.Printf("[%s] Fetching %s\n", checkResult.Domain, checkResult.URL)
 	var response *http.Response
-	response, err = http.Get(checkResult.url.String())
+	response, err = http.Get(checkResult.URL.String())
 	if err != nil {
 		return
 	}
 	var newUrl = response.Request.URL
-	if newUrl.String() != checkResult.url.String() {
+	if newUrl.String() != checkResult.URL.String() {
 		log.Printf("[%s] Redirect to: %s\n", checkResult.Domain, newUrl)
-		checkResult.url = newUrl
+		checkResult.URL = newUrl
 	}
 	checkResult.body, err = ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
@@ -117,7 +117,7 @@ func (checkResult *DomainCheckResult) fetch() (err error) {
 	log.Printf("[%s] Status %d\n", checkResult.Domain, checkResult.StatusCode)
 
 	if checkResult.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Failed to load '%s': %s", checkResult.url, checkResult.body)
+		err = fmt.Errorf("Failed to load '%s': %s", checkResult.URL, checkResult.body)
 		return
 	}
 	return
@@ -142,7 +142,7 @@ func (checkResult *DomainCheckResult) checkClickCounter() (err error) {
 	if checkResult.ScriptPresent {
 		log.Printf("[%s] click-counter script installed\n", checkResult.Domain)
 	} else {
-		err = fmt.Errorf("click-counter script not installed", checkResult.url)
+		err = fmt.Errorf("click-counter script not installed", checkResult.URL)
 		return
 	}
 	return
@@ -169,7 +169,7 @@ func (checkResult *DomainCheckResult) checkIframe() (err error) {
 		if len(checkResult.IframeTarget) > 0 {
 			log.Printf("[%s] iframe src: %s\n", checkResult.Domain, checkResult.IframeTarget)
 		} else {
-			err = fmt.Errorf("iframe has no src", checkResult.url)
+			err = fmt.Errorf("iframe has no src", checkResult.URL)
 			return
 		}
 	}

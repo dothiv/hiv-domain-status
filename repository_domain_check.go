@@ -8,10 +8,11 @@ import (
 
 type DomainCheckRepositoryInterface interface {
 	Persist(result *DomainCheck) (err error)
-	Remove(domain *Domain) (err error)
+	Remove(result *DomainCheck) (err error)
 	FindAll() (results []*DomainCheck, err error)
-	FindByDomain(domain string) (result *DomainCheck, err error)
-	FindPaginated(numitems int, offsetKey string) (domains []*Domain, err error)
+	FindByDomain(domain string) (result []*DomainCheck, err error)
+	FindLatestByDomain(domain string) (result *DomainCheck, err error)
+	FindPaginated(numitems int, offsetKey string) (results []*DomainCheck, err error)
 	Stats() (count int, maxKey string, err error)
 }
 
@@ -110,8 +111,19 @@ func (repo *DomainCheckRepository) FindById(id int64) (result *DomainCheck, err 
 	return
 }
 
-func (repo *DomainCheckRepository) FindByDomain(domain string) (result *DomainCheck, err error) {
+func (repo *DomainCheckRepository) FindByDomain(domain string) (results []*DomainCheck, err error) {
+	var rows *sql.Rows
+	rows, err = repo.db.Query("SELECT " + repo.ID_FIELD + "," + repo.FIELDS+","+repo.CREATED_FIELD + " FROM " + repo.TABLE_NAME + " WHERE domain = $1", domain)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	results, err = repo.rowsToResult(rows)
+	return
+}
+
+func (repo *DomainCheckRepository) FindLatestByDomain(domain string) (result *DomainCheck, err error) {
 	result = new(DomainCheck)
-	err = repo.db.QueryRow("SELECT " + repo.ID_FIELD + "," + repo.FIELDS+","+repo.CREATED_FIELD + " FROM " + repo.TABLE_NAME + " WHERE domain = $1", domain).Scan(&result.Id, &result.Domain, &result.URL, &result.StatusCode, &result.ScriptPresent, &result.IframeTarget, &result.IframeTargetOk, &result.Valid, &result.Created)
+	err = repo.db.QueryRow("SELECT " + repo.ID_FIELD + "," + repo.FIELDS+","+repo.CREATED_FIELD + " FROM " + repo.TABLE_NAME + " WHERE domain = $1 ORDER BY "+repo.CREATED_FIELD + " DESC LIMIT 1", domain).Scan(&result.Id, &result.Domain, &result.URL, &result.StatusCode, &result.ScriptPresent, &result.IframeTarget, &result.IframeTargetOk, &result.Valid, &result.Created)
 	return
 }

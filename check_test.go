@@ -40,7 +40,7 @@ func TestThatItChecksDomain(t *testing.T) {
 
 	testChecker := NewDomainCheckResult("example.hiv")
 	testUrl, _ := url.Parse(ts.URL)
-	testChecker.url = testUrl
+	testChecker.URL = testUrl
 	testChecker.SaveBody = false
 	err := testChecker.Check()
 	assert.Nil(err)

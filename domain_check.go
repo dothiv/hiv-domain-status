@@ -14,3 +14,28 @@ type DomainCheck struct {
 	Valid        bool
 	Created      *time.Time
 }
+
+func (self *DomainCheck) Equals(other *DomainCheck) bool {
+	if (self.Domain != other.Domain) {
+		return false
+	}
+	if (self.URL != other.URL) {
+		return false
+	}
+	if (self.StatusCode != other.StatusCode) {
+		return false
+	}
+	if (self.ScriptPresent != other.ScriptPresent) {
+		return false
+	}
+	if (self.IframeTarget != other.IframeTarget) {
+		return false
+	}
+	if (self.IframeTargetOk != other.IframeTargetOk) {
+		return false
+	}
+	if (self.Valid != other.Valid) {
+		return false
+	}
+	return true
+}

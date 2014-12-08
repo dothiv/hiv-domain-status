@@ -23,6 +23,12 @@ func TestThatItPersistsDomainCheck(t *testing.T) {
 	// Persist
 	result := new(DomainCheck)
 	result.Domain = "example.hiv"
+	result.URL = "http://example.hiv"
+	result.StatusCode = 200
+	result.ScriptPresent = true
+	result.IframeTarget = "http://example.com/"
+	result.IframeTargetOk = true
+	result.Valid = true
 	repo := NewDomainCheckRepository(db)
 	persistErr := repo.Persist(result)
 	assert.Nil(persistErr)
@@ -36,4 +42,26 @@ func TestThatItPersistsDomainCheck(t *testing.T) {
 
 	assert.Equal(1, r.Id)
 	assert.Equal("example.hiv", r.Domain)
+	assert.Equal("http://example.hiv", r.URL)
+	assert.Equal(200, r.StatusCode)
+	assert.True(r.ScriptPresent)
+	assert.Equal("http://example.com/", r.IframeTarget)
+	assert.True(r.IframeTargetOk)
+	assert.True(r.Valid)
+
+	// Verify By Domain
+	resultsByName, findNameErr := repo.FindByDomain("example.hiv")
+	assert.Nil(findNameErr)
+	assert.Equal(1, len(resultsByName))
+
+	r2 := results[0]
+
+	assert.Equal(1, r2.Id)
+	assert.Equal("example.hiv", r2.Domain)
+
+	// Verify Latest By Domain
+	r3, findLatestByNameErr := repo.FindLatestByDomain("example.hiv")
+	assert.Nil(findLatestByNameErr)
+	assert.Equal(1, r3.Id)
+	assert.Equal("example.hiv", r3.Domain)
 }

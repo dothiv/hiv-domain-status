@@ -54,8 +54,9 @@ func main() {
 		if err != nil {
 			return
 		}
-		repo := hivdomainstatus.NewDomainRepository(db)
-		manager := hivdomainstatus.NewManager(repo)
+		domainRepo := hivdomainstatus.NewDomainRepository(db)
+		domainCheckRepo := hivdomainstatus.NewDomainCheckRepository(db)
+		manager := hivdomainstatus.NewManager(domainRepo, domainCheckRepo)
 
 		if len(os.Args) > 2 {
 			var result *hivdomainstatus.DomainCheckResult
