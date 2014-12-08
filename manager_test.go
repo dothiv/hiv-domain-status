@@ -33,9 +33,11 @@ func TestThatItStoresResultForNewDomain(t *testing.T) {
 	assert.Nil(findErr)
 	assert.Equal(1, len(domains))
 
-	assert.Equal(1, domains[0].Id)
-	assert.Equal("example.hiv", domains[0].Name)
-	assert.False(domains[0].Valid)
+	d := domains[0]
+
+	assert.Equal(1, d.Id)
+	assert.Equal("example.hiv", d.Name)
+	assert.False(d.Valid)
 }
 
 func TestThatItStoresResultForExistingDomain(t *testing.T) {
@@ -59,7 +61,9 @@ func TestThatItStoresResultForExistingDomain(t *testing.T) {
 	assert.Nil(findErr)
 	assert.Equal(1, len(domains))
 
-	assert.Equal(1, domains[0].Id)
-	assert.Equal("example.hiv", domains[0].Name)
-	assert.True(domains[0].Valid)
+	d2 := domains[0]
+
+	assert.Equal(1, d2.Id)
+	assert.Equal("example.hiv", d2.Name)
+	assert.True(d2.Valid)
 }

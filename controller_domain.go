@@ -103,7 +103,11 @@ func (c *DomainController) createItem(w http.ResponseWriter, r *http.Request, ro
 	}
 	domain := new(Domain)
 	domain.Name = m.Name
-	c.repo.Persist(domain)
+	err = c.repo.Persist(domain)
+	if err != nil {
+		HttpProblem(w, http.StatusBadRequest, "Failed to create domain: " + err.Error())
+		return
+	}
 	m = *transformEntity(domain, getHttpHost(r) + "/domain/%d")
 	w.Header().Add("Location", m.JsonLDId)
 	w.WriteHeader(http.StatusCreated)

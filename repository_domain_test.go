@@ -9,7 +9,7 @@ import (
 
 // Test for the domain repository
 
-func TestThatItPersists(t *testing.T) {
+func TestThatItPersistsADomain(t *testing.T) {
 	assert := assert.New(t)
 
 	c := NewDefaultConfig()
@@ -32,6 +32,8 @@ func TestThatItPersists(t *testing.T) {
 	assert.Nil(findErr)
 	assert.Equal(1, len(domains))
 
-	assert.Equal(1, domains[0].Id)
-	assert.Equal("example.hiv", domains[0].Name)
+	d := domains[0]
+
+	assert.Equal(1, d.Id)
+	assert.Equal("example.hiv", d.Name)
 }
