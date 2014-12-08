@@ -33,7 +33,6 @@ type DomainCheckResult struct {
 func NewDomainCheckResult(domain string) (checkResult *DomainCheckResult) {
 	checkResult = new(DomainCheckResult)
 	checkResult.Domain = domain
-	checkResult.SaveBody = true
 	checkResult.URL, _ = url.Parse("http://www." + checkResult.Domain + "/")
 	return
 }
