@@ -8,18 +8,24 @@ type DomainListModel struct {
 	Total int            `json:"total"`
 }
 
+type DomainCheckListModel struct {
+	JsonLDTypedModel
+	Items []*DomainCheckModel `json:"items"`
+	Total int                 `json:"total"`
+}
+
 type DomainCheckModel struct {
 	JsonLDTypedModel
 	Id             string     `json:"-"`
 	Domain         string     `json:"domain"`
-	DnsOK          bool       `json:"dns_ok"`
+	DnsOK          bool       `json:"dnsOk"`
 	Addresses      []string   `json:"addresses"`
 	URL            string     `json:"url"`
-	StatusCode     int        `json:"status_code"`
-	ScriptPresent  bool       `json:"script_present"`
-	IframePresent  bool       `json:"iframe_present"`
-	IframeTarget   string     `json:"iframe_target"`
-	IframeTargetOk bool       `json:"iframe_target_ok"`
+	StatusCode     int        `json:"statusCode"`
+	ScriptPresent  bool       `json:"scriptPresent"`
+	IframePresent  bool       `json:"iframePresent"`
+	IframeTarget   string     `json:"iframeTarget"`
+	IframeTargetOk bool       `json:"iframeTargetOk"`
 	Valid          bool       `json:"valid"`
 	Created        *time.Time `json:"created"`
 }

@@ -44,11 +44,14 @@ func Serve(c *Config) (err error) {
 	domainCntrl := new(DomainController)
 	domainCntrl.domainRepo = NewDomainRepository(db)
 	domainCntrl.domainCheckRepo = NewDomainCheckRepository(db)
+	domainCheckCntrl := new(DomainCheckController)
+	domainCheckCntrl.domainCheckRepo = domainCntrl.domainCheckRepo
 	entryPointCntrl := new(EntryPointController)
 
 	reHandler := new(RegexpHandler)
 	reHandler.AddRoute("^/domain/([0-9]+)$", domainCntrl.ItemHandler)
 	reHandler.AddRoute("^/domain$", domainCntrl.ListingHandler)
+	reHandler.AddRoute("^/check$", domainCheckCntrl.ListingHandler)
 	reHandler.AddRoute("^/$", entryPointCntrl.EntryPointHandler)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost:%d", c.Server.Port), reHandler))
 

@@ -14,15 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Test for registrations
-
-type DomainList struct {
-	Total int
-	Items []struct {
-		Name string
-	}
-}
-
 func SetupDomainTest(t *testing.T) (cntrl *DomainController) {
 	assert := assert.New(t)
 	c, configErr := NewConfig()
@@ -80,7 +71,7 @@ func TestThatItListsDomains(t *testing.T) {
 	}
 	assert.Equal("application/json", res.Header.Get("Content-Type"))
 
-	var l *DomainList = &DomainList{}
+	var l DomainListModel
 	unmarshalErr := json.Unmarshal(b, &l)
 	if unmarshalErr != nil {
 		t.Fatal(unmarshalErr)
@@ -93,21 +84,20 @@ func TestThatItListsDomains(t *testing.T) {
 	assert.Equal(`<`+ts.URL+`/domain?offsetKey=2>; rel="next"`, res.Header.Get("Link"))
 
 	// Contains latest domain check
-	// TODO: FIXME the check does not get unmarshalled
-	/*
-		assert.Equal("example.hiv", l.Items[0].Check.Domain)
-		assert.Equal(fmt.Sprintf("%s/check/1", ts.URL), l.Items[0].Check.JsonLDId)
-		assert.Equal("http://jsonld.click4life.hiv/DomainCheck", l.Items[0].Check.JsonLDContext)
-		assert.True(l.Items[0].Check.DnsOK)
-		assert.Equal("127.0.0.1", l.Items[0].Check.Addresses[0])
-		assert.Equal("::1", l.Items[0].Check.Addresses[1])
-		assert.Equal("http://example.hiv", l.Items[0].Check.URL)
-		assert.Equal(200, l.Items[0].Check.StatusCode)
-		assert.True(l.Items[0].Check.ScriptPresent)
-		assert.Equal("http://example.com/", l.Items[0].Check.IframeTarget)
-		assert.True(l.Items[0].Check.IframeTargetOk)
-		assert.True(l.Items[0].Check.Valid)
-	*/
+	assert.Equal("example.hiv", l.Items[0].Check.Domain)
+	assert.Equal(fmt.Sprintf("%s/check/1", ts.URL), l.Items[0].Check.JsonLDId)
+	assert.Equal("http://jsonld.click4life.hiv/DomainCheck", l.Items[0].Check.JsonLDContext)
+	assert.True(l.Items[0].Check.DnsOK)
+	assert.Equal("127.0.0.1", l.Items[0].Check.Addresses[0])
+	assert.Equal("::1", l.Items[0].Check.Addresses[1])
+	assert.Equal("http://example.hiv", l.Items[0].Check.URL)
+	assert.Equal(200, l.Items[0].Check.StatusCode)
+	assert.True(l.Items[0].Check.ScriptPresent)
+	assert.Equal("http://example.com/", l.Items[0].Check.IframeTarget)
+	assert.True(l.Items[0].Check.IframeTargetOk)
+	assert.True(l.Items[0].Check.Valid)
+
+	assert.Nil(l.Items[1].Check)
 }
 
 func TestThatItReturnsNextUrlAfterEndOfDomains(t *testing.T) {
