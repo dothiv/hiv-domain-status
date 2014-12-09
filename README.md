@@ -1,7 +1,6 @@
 # .hiv Domain Status
 
 [![Travis](https://travis-ci.org/dothiv/hiv-domain-status.svg?branch=master)](https://travis-ci.org/dothiv/hiv-domain-status/)
-[![Code Climate](https://codeclimate.com/github/dothiv/hiv-domain-status/badges/gpa.svg)](https://codeclimate.com/github/dothiv/hiv-domain-status)
 
 This package is a web crawler which determines the status of a registered .hiv 
 domain.
