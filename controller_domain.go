@@ -57,6 +57,7 @@ func (c *DomainController) ListingHandler(w http.ResponseWriter, r *http.Request
 		domainCheck, checkErr := c.domainCheckRepo.FindLatestByDomain(item.Name)
 		if checkErr == nil {
 			e.Check = transformCheckEntity(domainCheck, getHttpHost(r)+"/check/%d")
+			e.Valid = domainCheck.Valid
 		}
 	}
 
@@ -146,6 +147,7 @@ func (c *DomainController) ItemHandler(w http.ResponseWriter, r *http.Request, r
 	m := transformEntity(domain, getHttpHost(r)+"/domain/%d")
 	if checkErr == nil {
 		m.Check = transformCheckEntity(domainCheck, getHttpHost(r)+"/check/%d")
+		m.Valid = domainCheck.Valid
 	}
 	encoder := json.NewEncoder(w)
 	encoder.Encode(m)
