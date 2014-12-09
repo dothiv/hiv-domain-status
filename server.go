@@ -24,7 +24,7 @@ func (h *RegexpHandler) AddRoute(re string, handler func(http.ResponseWriter, *h
 
 func (h *RegexpHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	for _, route := range h.routes {
-		matches := route.re.FindStringSubmatch(r.URL.String())
+		matches := route.re.FindStringSubmatch(r.URL.Path)
 		if matches != nil {
 			route.handler(rw, r, matches)
 			break
@@ -47,7 +47,6 @@ func Serve(c *Config) (err error) {
 	entryPointCntrl := new(EntryPointController)
 
 	reHandler := new(RegexpHandler)
-	reHandler.AddRoute("^/domain/([0-9]+)/check$", domainCntrl.CheckHandler)
 	reHandler.AddRoute("^/domain/([0-9]+)$", domainCntrl.ItemHandler)
 	reHandler.AddRoute("^/domain$", domainCntrl.ListingHandler)
 	reHandler.AddRoute("^/$", entryPointCntrl.EntryPointHandler)

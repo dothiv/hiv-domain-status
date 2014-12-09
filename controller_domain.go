@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -54,6 +53,11 @@ func (c *DomainController) ListingHandler(w http.ResponseWriter, r *http.Request
 	for i, item := range items {
 		e := transformEntity(item, getHttpHost(r)+"/domain/%d")
 		list.Items[i] = e
+		// Find latest check
+		domainCheck, checkErr := c.domainCheckRepo.FindLatestByDomain(item.Name)
+		if checkErr == nil {
+			e.Check = transformCheckEntity(domainCheck, getHttpHost(r)+"/check/%d")
+		}
 	}
 
 	w.Header().Add("Content-Type", "application/json")
@@ -74,9 +78,7 @@ func transformEntity(e *Domain, route string) (m *DomainModel) {
 	m.JsonLDId = fmt.Sprintf(route, e.Id)
 	m.Id = fmt.Sprintf("%d", e.Id)
 	m.Name = e.Name
-	m.Check = new(JsonLDTypedModel)
-	m.Check.JsonLDContext = "http://jsonld.click4life.hiv/DomainCheck"
-	m.Check.JsonLDId = m.JsonLDId + "/check"
+	m.Created = e.Created
 	return
 }
 
@@ -115,6 +117,7 @@ func (c *DomainController) createItem(w http.ResponseWriter, r *http.Request, ro
 	}
 	m = *transformEntity(domain, getHttpHost(r)+"/domain/%d")
 	w.Header().Add("Location", m.JsonLDId)
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -136,8 +139,14 @@ func (c *DomainController) ItemHandler(w http.ResponseWriter, r *http.Request, r
 		return
 	}
 
+	// Find latest check
+	domainCheck, checkErr := c.domainCheckRepo.FindLatestByDomain(domain.Name)
+
 	w.Header().Add("Content-Type", "application/json")
 	m := transformEntity(domain, getHttpHost(r)+"/domain/%d")
+	if checkErr == nil {
+		m.Check = transformCheckEntity(domainCheck, getHttpHost(r)+"/check/%d")
+	}
 	encoder := json.NewEncoder(w)
 	encoder.Encode(m)
 }
@@ -145,8 +154,7 @@ func (c *DomainController) ItemHandler(w http.ResponseWriter, r *http.Request, r
 func transformCheckEntity(check *DomainCheck, route string) (m *DomainCheckModel) {
 	m = new(DomainCheckModel)
 	m.JsonLDContext = "http://jsonld.click4life.hiv/DomainCheck"
-	// m.JsonLDId = fmt.Sprintf(route, check.Id)
-	m.JsonLDId = route
+	m.JsonLDId = fmt.Sprintf(route, check.Id)
 	m.Id = fmt.Sprintf("%d", check.Id)
 	m.Domain = check.Domain
 	m.DnsOK = check.DnsOK
@@ -157,30 +165,6 @@ func transformCheckEntity(check *DomainCheck, route string) (m *DomainCheckModel
 	m.IframeTarget = check.IframeTarget
 	m.IframeTargetOk = check.IframeTargetOk
 	m.Valid = check.Valid
+	m.Created = check.Created
 	return
-}
-
-func (c *DomainController) CheckHandler(w http.ResponseWriter, r *http.Request, routeParams []string) {
-	id, err := strconv.ParseInt(routeParams[1], 0, 64)
-	if err != nil {
-		HttpProblem(w, http.StatusBadRequest, "Invalid id: "+routeParams[1])
-		return
-	}
-	domain, findErr := c.domainRepo.FindById(id)
-	if findErr != nil {
-		HttpProblem(w, http.StatusNotFound, "Domain not found: "+routeParams[1])
-		return
-	}
-	domainCheck, checkErr := c.domainCheckRepo.FindLatestByDomain(domain.Name)
-	if checkErr != nil {
-		HttpProblem(w, http.StatusNotFound, "Domain check not found: "+routeParams[1])
-		return
-	}
-	w.Header().Add("Content-Type", "application/json")
-	m := transformCheckEntity(domainCheck, fmt.Sprintf(getHttpHost(r)+"/domain/%d/check", domain.Id))
-	encoder := json.NewEncoder(w)
-	encodeErr := encoder.Encode(m)
-	if encodeErr != nil {
-		log.Fatalln(encodeErr.Error())
-	}
 }
