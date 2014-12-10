@@ -32,7 +32,7 @@ func NewDomainCheckRepository(db *sql.DB) (repo *DomainCheckRepository) {
 	repo = new(DomainCheckRepository)
 	repo.db = db
 	repo.TABLE_NAME = "domain_check"
-	repo.FIELDS = "domain, dns_ok, addresses, url, status_code, script_present, iframe_target, iframe_target_ok, valid"
+	repo.FIELDS = "domain, dns_ok, addresses, url, status_code, script_present, iframe_present, iframe_target, iframe_target_ok, valid"
 	repo.ID_FIELD = "id"
 	repo.CREATED_FIELD = "created"
 	return
@@ -46,13 +46,13 @@ func (repo *DomainCheckRepository) Persist(result *DomainCheck) (err error) {
 	}
 	if result.Id > 0 {
 		_, err = repo.db.Exec("UPDATE "+repo.TABLE_NAME+" "+
-			"SET domain = $1, dns_ok = $2, addresses = $3, url = $4, status_code = $5, script_present = $6, iframe_target = $7, iframe_target_ok = $8, valid = $9 WHERE id = $10",
-			result.Domain, result.DnsOK, result.AddressesJson, result.URL, result.StatusCode, result.ScriptPresent, result.IframeTarget, result.IframeTargetOk, result.Valid, result.Id)
+			"SET domain = $1, dns_ok = $2, addresses = $3, url = $4, status_code = $5, script_present = $6, iframe_present = $7, iframe_target = $8, iframe_target_ok = $9, valid = $10 WHERE id = $11",
+			result.Domain, result.DnsOK, result.AddressesJson, result.URL, result.StatusCode, result.ScriptPresent, result.IframePresent, result.IframeTarget, result.IframeTargetOk, result.Valid, result.Id)
 	} else {
 		err = repo.db.QueryRow("INSERT INTO "+repo.TABLE_NAME+" "+
 			"("+repo.FIELDS+") "+
-			"VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, created",
-			result.Domain, result.DnsOK, result.AddressesJson, result.URL, result.StatusCode, result.ScriptPresent, result.IframeTarget, result.IframeTargetOk, result.Valid).Scan(&result.Id, &result.Created)
+			"VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, created",
+			result.Domain, result.DnsOK, result.AddressesJson, result.URL, result.StatusCode, result.ScriptPresent, result.IframePresent, result.IframeTarget, result.IframeTargetOk, result.Valid).Scan(&result.Id, &result.Created)
 	}
 	if err != nil {
 		log.Fatalln(err.Error())
@@ -72,7 +72,7 @@ func (repo *DomainCheckRepository) rowsToResult(rows *sql.Rows) (results []*Doma
 	results = make([]*DomainCheck, 0)
 	for rows.Next() {
 		var result = new(DomainCheck)
-		err = rows.Scan(&result.Id, &result.Domain, &result.DnsOK, &result.AddressesJson, &result.URL, &result.StatusCode, &result.ScriptPresent, &result.IframeTarget, &result.IframeTargetOk, &result.Valid, &result.Created)
+		err = rows.Scan(&result.Id, &result.Domain, &result.DnsOK, &result.AddressesJson, &result.URL, &result.StatusCode, &result.ScriptPresent, &result.IframePresent, &result.IframeTarget, &result.IframeTargetOk, &result.Valid, &result.Created)
 		if err != nil {
 			return
 		}
@@ -123,7 +123,7 @@ func (repo *DomainCheckRepository) Stats() (count int, maxKey string, err error)
 
 func (repo *DomainCheckRepository) FindById(id int64) (result *DomainCheck, err error) {
 	result = new(DomainCheck)
-	err = repo.db.QueryRow("SELECT "+repo.ID_FIELD+","+repo.FIELDS+","+repo.CREATED_FIELD+" FROM "+repo.TABLE_NAME+" WHERE "+repo.ID_FIELD+" = $1", id).Scan(&result.Id, &result.Domain, &result.DnsOK, &result.AddressesJson, &result.URL, &result.StatusCode, &result.ScriptPresent, &result.IframeTarget, &result.IframeTargetOk, &result.Valid, &result.Created)
+	err = repo.db.QueryRow("SELECT "+repo.ID_FIELD+","+repo.FIELDS+","+repo.CREATED_FIELD+" FROM "+repo.TABLE_NAME+" WHERE "+repo.ID_FIELD+" = $1", id).Scan(&result.Id, &result.Domain, &result.DnsOK, &result.AddressesJson, &result.URL, &result.StatusCode, &result.ScriptPresent, &result.IframePresent, &result.IframeTarget, &result.IframeTargetOk, &result.Valid, &result.Created)
 	if err != nil {
 		return
 	}
@@ -144,7 +144,7 @@ func (repo *DomainCheckRepository) FindByDomain(domain string) (results []*Domai
 
 func (repo *DomainCheckRepository) FindLatestByDomain(domain string) (result *DomainCheck, err error) {
 	result = new(DomainCheck)
-	err = repo.db.QueryRow("SELECT "+repo.ID_FIELD+","+repo.FIELDS+","+repo.CREATED_FIELD+" FROM "+repo.TABLE_NAME+" WHERE domain = $1 ORDER BY "+repo.CREATED_FIELD+" DESC LIMIT 1", domain).Scan(&result.Id, &result.Domain, &result.DnsOK, &result.AddressesJson, &result.URL, &result.StatusCode, &result.ScriptPresent, &result.IframeTarget, &result.IframeTargetOk, &result.Valid, &result.Created)
+	err = repo.db.QueryRow("SELECT "+repo.ID_FIELD+","+repo.FIELDS+","+repo.CREATED_FIELD+" FROM "+repo.TABLE_NAME+" WHERE domain = $1 ORDER BY "+repo.CREATED_FIELD+" DESC LIMIT 1", domain).Scan(&result.Id, &result.Domain, &result.DnsOK, &result.AddressesJson, &result.URL, &result.StatusCode, &result.ScriptPresent, &result.IframePresent, &result.IframeTarget, &result.IframeTargetOk, &result.Valid, &result.Created)
 	if err != nil {
 		return
 	}

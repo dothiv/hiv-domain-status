@@ -13,6 +13,7 @@ func transformCheckEntity(check *DomainCheck, route string) (m *DomainCheckModel
 	m.URL = check.URL
 	m.StatusCode = check.StatusCode
 	m.ScriptPresent = check.ScriptPresent
+	m.IframePresent = check.IframePresent
 	m.IframeTarget = check.IframeTarget
 	m.IframeTargetOk = check.IframeTargetOk
 	m.Valid = check.Valid

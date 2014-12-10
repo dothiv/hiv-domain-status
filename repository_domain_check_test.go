@@ -29,6 +29,7 @@ func TestThatItPersistsDomainCheck(t *testing.T) {
 	result.URL = "http://example.hiv"
 	result.StatusCode = 200
 	result.ScriptPresent = true
+	result.IframePresent = true
 	result.IframeTarget = "http://example.com/"
 	result.IframeTargetOk = true
 	result.Valid = true
@@ -51,6 +52,7 @@ func TestThatItPersistsDomainCheck(t *testing.T) {
 	assert.Equal("http://example.hiv", r.URL)
 	assert.Equal(200, r.StatusCode)
 	assert.True(r.ScriptPresent)
+	assert.True(r.IframePresent)
 	assert.Equal("http://example.com/", r.IframeTarget)
 	assert.True(r.IframeTargetOk)
 	assert.True(r.Valid)

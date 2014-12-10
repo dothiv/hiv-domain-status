@@ -36,6 +36,7 @@ func (m *Manager) OnCheckDomainResult(r *DomainCheckResult) (err error) {
 	result.URL = r.URL.String()
 	result.StatusCode = r.StatusCode
 	result.ScriptPresent = r.ScriptPresent
+	result.IframePresent = r.IframePresent
 	result.IframeTarget = r.IframeTarget
 	result.IframeTargetOk = r.IframeTargetOk
 	result.Valid = r.Valid

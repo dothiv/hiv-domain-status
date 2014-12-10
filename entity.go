@@ -26,6 +26,7 @@ type DomainCheck struct {
 	URL            string
 	StatusCode     int
 	ScriptPresent  bool
+	IframePresent  bool
 	IframeTarget   string
 	IframeTargetOk bool
 	Valid          bool
@@ -49,6 +50,9 @@ func (self *DomainCheck) Equals(other *DomainCheck) bool {
 		return false
 	}
 	if self.ScriptPresent != other.ScriptPresent {
+		return false
+	}
+	if self.IframePresent != other.IframePresent {
 		return false
 	}
 	if self.IframeTarget != other.IframeTarget {
