@@ -72,6 +72,7 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 		redirectUrl, redirectUrlErr := url.Parse(checkResult.IframeTarget)
 		if redirectUrlErr != nil {
 			checkResult.Valid = false
+			err = redirectUrlErr
 			return
 		}
 		if len(redirectUrl.Scheme) == 0 {
@@ -85,6 +86,7 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 		if redirectCheckErr != nil {
 			checkResult.IframeTargetOk = false
 			checkResult.Valid = false
+			err = redirectCheckErr
 			return
 		} else {
 			checkResult.IframeTargetOk = true
