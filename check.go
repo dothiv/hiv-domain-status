@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -109,7 +110,12 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 }
 
 var lookupHost = func(domain string) (addresses []string, err error) {
-	return net.LookupHost(domain)
+	addresses, err = net.LookupHost(domain)
+	if err != nil {
+		return
+	}
+	sort.Strings(addresses)
+	return
 }
 
 // checks the DNS
