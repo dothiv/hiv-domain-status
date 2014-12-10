@@ -43,6 +43,11 @@ func (checkResult *DomainCheckResult) IsHivDomain() bool {
 	return strings.ToLower(checkResult.Domain[len(checkResult.Domain)-3:]) == "hiv"
 }
 
+func (checkResult *DomainCheckResult) IsWWW() bool {
+	var wwwMatch = regexp.MustCompile(`^https?://www\.+`)
+	return wwwMatch.MatchString(checkResult.URL.String())
+}
+
 func (checkResult *DomainCheckResult) Check() (err error) {
 	checkResult.Valid = true
 	if checkResult.IsHivDomain() {
@@ -54,6 +59,13 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 	}
 	err = checkResult.fetch()
 	if err != nil {
+		if checkResult.IsWWW() {
+			// Fetch page without www (if not present)
+			err = nil
+			checkResult.URL, _ = url.Parse("http://" + checkResult.Domain + "/")
+			checkResult.Check()
+			return
+		}
 		checkResult.Valid = false
 		return
 	}
