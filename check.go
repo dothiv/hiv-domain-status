@@ -10,6 +10,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var CLICKCOUNTER_SCRIPT = "//dothiv-registry.appspot.com/static/clickcounter.min.js"
@@ -109,13 +110,32 @@ func (checkResult *DomainCheckResult) dnsCheck() (err error) {
 	return
 }
 
+func TimeoutDialer(timeout time.Duration) func(net, addr string) (c net.Conn, err error) {
+	return func(netw, addr string) (net.Conn, error) {
+		conn, err := net.DialTimeout(netw, addr, timeout)
+		if err != nil {
+			return nil, err
+		}
+		conn.SetDeadline(time.Now().Add(timeout))
+		return conn, nil
+	}
+}
+
+var timeout = time.Duration(5 * time.Second)
+
 // fetches an URL and saves it as a temp file
 // then opens it
 func (checkResult *DomainCheckResult) fetch() (err error) {
 	log.Printf("[%s] Fetching %s\n", checkResult.Domain, checkResult.URL)
 	var response *http.Response
 	url := checkResult.URL.String()
-	response, err = http.Get(url)
+	transport := http.Transport{
+		Dial: TimeoutDialer(time.Duration(5 * time.Second)),
+	}
+	client := http.Client{
+		Transport: &transport,
+	}
+	response, err = client.Get(url)
 	if err != nil {
 		return
 	}
