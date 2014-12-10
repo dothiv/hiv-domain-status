@@ -61,9 +61,8 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 	if err != nil {
 		if checkResult.IsWWW() {
 			// Fetch page without www (if not present)
-			err = nil
 			checkResult.URL, _ = url.Parse("http://" + checkResult.Domain + "/")
-			checkResult.Check()
+			err = checkResult.Check()
 			return
 		}
 		checkResult.Valid = false
