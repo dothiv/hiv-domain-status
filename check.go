@@ -1,6 +1,7 @@
 package hivdomainstatus
 
 import (
+	_ "crypto/sha512"
 	"fmt"
 	"io/ioutil"
 	"log"
