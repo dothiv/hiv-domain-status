@@ -57,3 +57,9 @@ func TestThatItChecksDomain(t *testing.T) {
 	assert.True(testChecker.DnsOk)
 	assert.Equal("1.2.3.4", testChecker.Addresses[0])
 }
+
+func TestThatItDetectsHivDomain(t *testing.T) {
+	assert := assert.New(t)
+	testChecker := NewDomainCheckResult("hanseventures.hiv")
+	assert.True(testChecker.IsHivDomain())
+}

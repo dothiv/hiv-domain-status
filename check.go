@@ -31,6 +31,8 @@ type DomainCheckResult struct {
 	IframeTarget   string
 	IframeTargetOk bool
 	Valid          bool
+	verbose        bool
+	wwwRemoved     bool
 }
 
 func NewDomainCheckResult(domain string) (checkResult *DomainCheckResult) {
@@ -60,8 +62,9 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 	}
 	err = checkResult.fetch()
 	if err != nil {
-		if checkResult.IsWWW() {
+		if checkResult.IsWWW() && !checkResult.wwwRemoved {
 			// Fetch page without www (if not present)
+			checkResult.wwwRemoved = true
 			checkResult.URL, _ = url.Parse("http://" + checkResult.Domain + "/")
 			err = checkResult.Check()
 			return
@@ -184,7 +187,11 @@ func (checkResult *DomainCheckResult) fetch() (err error) {
 	log.Printf("[%s] Status %d\n", checkResult.Domain, checkResult.StatusCode)
 
 	if checkResult.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Failed to load '%s': %s", checkResult.URL, checkResult.body)
+		if checkResult.verbose {
+			err = fmt.Errorf("Failed to load '%s': %s", checkResult.URL, checkResult.body)
+		} else {
+			err = fmt.Errorf("Failed to load '%s'", checkResult.URL)
+		}
 		return
 	}
 	return
