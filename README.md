@@ -34,3 +34,11 @@ Create a databse to run the tests on:
 	
 	go test ./...
 
+## Installation
+
+    go get -v -u github.com/dothiv/hiv-domain-status
+    go build -a -v ~/go/src/github.com/dothiv/hiv-domain-status/main/hiv-domain-status.go
+    # now there is a hiv-domain-status binary in you cwd
+    cp ~/go/src/github.com/dothiv/hiv-domain-status/config.ini.dist ./
+    # adapt the config.ini to your needs
+    ./hiv-domain-status
