@@ -30,3 +30,7 @@ Create a databse to run the tests on:
 	GRANT ALL PRIVILEGES ON DATABASE hivdomainstatus TO hivdomainstatus;
 	
 	psql -H localhost -U hivdomainstatus -d hivdomainstatus < sql/domain.sql
+	psql -H localhost -U hivdomainstatus -d hivdomainstatus < sql/domain_check.sql
+	
+	go test ./...
+
