@@ -102,7 +102,6 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 		redirectCheckErr := redirectChecker.Check()
 		if redirectCheckErr != nil {
 			checkResult.IframeTargetOk = false
-			checkResult.Valid = false
 			err = redirectCheckErr
 			return
 		} else {
