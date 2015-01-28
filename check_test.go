@@ -39,13 +39,23 @@ func TestThatItChecksDomain(t *testing.T) {
 	defer ts.Close()
 
 	lookupHost = func(domain string) (addresses []string, err error) {
-		assert.Equal("example.hiv", domain)
 		return []string{"1.2.3.4"}, nil
 	}
 
-	testChecker := NewDomainCheckResult("example.hiv")
+	n := 0
+
+	isValidDomain := func(domain string) bool {
+		n += 1
+		if n <= 2 {
+			return true
+		}
+		return false
+	}
+
 	testUrl, _ := url.Parse(ts.URL)
+	testChecker := NewDomainCheckResult(testUrl.Host, isValidDomain)
 	testChecker.URL = testUrl
+
 	testChecker.SaveBody = false
 	err := testChecker.Check()
 	assert.Nil(err)
@@ -56,10 +66,10 @@ func TestThatItChecksDomain(t *testing.T) {
 	assert.True(testChecker.IframeTargetOk)
 	assert.True(testChecker.DnsOk)
 	assert.Equal("1.2.3.4", testChecker.Addresses[0])
+	assert.True(testChecker.Valid)
 }
 
 func TestThatItDetectsHivDomain(t *testing.T) {
 	assert := assert.New(t)
-	testChecker := NewDomainCheckResult("hanseventures.hiv")
-	assert.True(testChecker.IsHivDomain())
+	assert.True(isHivDomain("hanseventures.hiv"))
 }

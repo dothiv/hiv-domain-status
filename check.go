@@ -33,17 +33,21 @@ type DomainCheckResult struct {
 	Valid          bool
 	verbose        bool
 	wwwRemoved     bool
+	isValidDomain  IsValidDomain
 }
 
-func NewDomainCheckResult(domain string) (checkResult *DomainCheckResult) {
+type IsValidDomain func(domain string) bool
+
+func NewDomainCheckResult(domain string, isValidDomain IsValidDomain) (checkResult *DomainCheckResult) {
 	checkResult = new(DomainCheckResult)
 	checkResult.Domain = domain
 	checkResult.URL, _ = url.Parse("http://www." + checkResult.Domain + "/")
+	checkResult.isValidDomain = isValidDomain
 	return
 }
 
-func (checkResult *DomainCheckResult) IsHivDomain() bool {
-	return strings.ToLower(checkResult.Domain[len(checkResult.Domain)-3:]) == "hiv"
+func isHivDomain(domain string) bool {
+	return strings.ToLower(domain[len(domain)-3:]) == "hiv"
 }
 
 func (checkResult *DomainCheckResult) IsWWW() bool {
@@ -53,7 +57,7 @@ func (checkResult *DomainCheckResult) IsWWW() bool {
 
 func (checkResult *DomainCheckResult) Check() (err error) {
 	checkResult.Valid = true
-	if checkResult.IsHivDomain() {
+	if checkResult.isValidDomain(checkResult.Domain) {
 		err = checkResult.dnsCheck()
 		if err != nil {
 			checkResult.Valid = false
@@ -72,9 +76,10 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 		checkResult.Valid = false
 		return
 	}
-	if !checkResult.IsHivDomain() {
+	if !checkResult.isValidDomain(checkResult.Domain) {
 		return
 	}
+
 	err = checkResult.checkClickCounter()
 	if err != nil {
 		checkResult.Valid = false
@@ -96,7 +101,7 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 			redirectUrl.Scheme = checkResult.URL.Scheme
 			checkResult.IframeTarget = redirectUrl.String()
 		}
-		redirectChecker := NewDomainCheckResult(redirectUrl.Host)
+		redirectChecker := NewDomainCheckResult(redirectUrl.Host, checkResult.isValidDomain)
 		redirectChecker.URL = redirectUrl
 		redirectChecker.SaveBody = false
 		redirectCheckErr := redirectChecker.Check()
@@ -107,6 +112,14 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 		} else {
 			checkResult.IframeTargetOk = true
 		}
+	}
+
+	// Domain might have changed by a redirect
+	print(checkResult.URL.Host + "\n")
+	if checkResult.Domain != checkResult.URL.Host {
+		checkResult.Valid = false
+		err = fmt.Errorf("Redirects to a different domain: %s", checkResult.URL.Host)
+		return
 	}
 	return
 }
@@ -250,7 +263,7 @@ func (checkResult *DomainCheckResult) checkIframe() (err error) {
 }
 
 func CheckDomain(config *Config, domain string) (checkResult *DomainCheckResult, err error) {
-	checkResult = NewDomainCheckResult(domain)
+	checkResult = NewDomainCheckResult(domain, isHivDomain)
 	err = checkResult.Check()
 	if !checkResult.Valid {
 		log.Printf("[%s] PROBLEM: %s\n", checkResult.Domain, err.Error())
