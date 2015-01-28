@@ -46,7 +46,16 @@ func TestThatItChecksDomain(t *testing.T) {
 
 	isValidDomain := func(domain string) bool {
 		n += 1
-		if n <= 2 {
+		if n == 1 {
+			return true
+		}
+		if n == 2 {
+			return true
+		}
+		if n == 3 {
+			return true
+		}
+		if n == 5 {
 			return true
 		}
 		return false

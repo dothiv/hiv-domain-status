@@ -33,16 +33,16 @@ type DomainCheckResult struct {
 	Valid          bool
 	verbose        bool
 	wwwRemoved     bool
-	isValidDomain  IsValidDomain
+	isAllowedTld   IsAllowedTld
 }
 
-type IsValidDomain func(domain string) bool
+type IsAllowedTld func(domain string) bool
 
-func NewDomainCheckResult(domain string, isValidDomain IsValidDomain) (checkResult *DomainCheckResult) {
+func NewDomainCheckResult(domain string, isAllowedTld IsAllowedTld) (checkResult *DomainCheckResult) {
 	checkResult = new(DomainCheckResult)
 	checkResult.Domain = domain
 	checkResult.URL, _ = url.Parse("http://www." + checkResult.Domain + "/")
-	checkResult.isValidDomain = isValidDomain
+	checkResult.isAllowedTld = isAllowedTld
 	return
 }
 
@@ -57,7 +57,7 @@ func (checkResult *DomainCheckResult) IsWWW() bool {
 
 func (checkResult *DomainCheckResult) Check() (err error) {
 	checkResult.Valid = true
-	if checkResult.isValidDomain(checkResult.Domain) {
+	if checkResult.isAllowedTld(checkResult.Domain) {
 		err = checkResult.dnsCheck()
 		if err != nil {
 			checkResult.Valid = false
@@ -76,7 +76,7 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 		checkResult.Valid = false
 		return
 	}
-	if !checkResult.isValidDomain(checkResult.Domain) {
+	if !checkResult.isAllowedTld(checkResult.Domain) {
 		return
 	}
 
@@ -101,7 +101,7 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 			redirectUrl.Scheme = checkResult.URL.Scheme
 			checkResult.IframeTarget = redirectUrl.String()
 		}
-		redirectChecker := NewDomainCheckResult(redirectUrl.Host, checkResult.isValidDomain)
+		redirectChecker := NewDomainCheckResult(redirectUrl.Host, checkResult.isAllowedTld)
 		redirectChecker.URL = redirectUrl
 		redirectChecker.SaveBody = false
 		redirectCheckErr := redirectChecker.Check()
@@ -115,10 +115,9 @@ func (checkResult *DomainCheckResult) Check() (err error) {
 	}
 
 	// Domain might have changed by a redirect
-	print(checkResult.URL.Host + "\n")
-	if checkResult.Domain != checkResult.URL.Host {
+	if !checkResult.isAllowedTld(checkResult.URL.Host) {
 		checkResult.Valid = false
-		err = fmt.Errorf("Redirects to a different domain: %s", checkResult.URL.Host)
+		err = fmt.Errorf("Redirects to an unallowed domain: %s", checkResult.URL.Host)
 		return
 	}
 	return
